@@ -23,7 +23,11 @@ class Feed extends Component {
   };
 
   componentDidMount() {
-    fetch("http://localhost:8080/auth/status")
+    fetch("http://localhost:8080/auth/status", {
+      headers: {
+        Authorization: "Bearer " + this.props.token
+      }
+    })
       .then(res => {
         if (res.status !== 200) {
           throw new Error("Failed to fetch user status.");
@@ -51,9 +55,10 @@ class Feed extends Component {
   addPost = post => {
     this.setState(prevState => {
       const updatedPosts = [...prevState.posts];
-
       if (prevState.postPage === 1) {
-        updatedPosts.pop();
+        if (prevState.posts.length >= 2) {
+          updatedPosts.pop();
+        }
         updatedPosts.unshift(post);
       }
       return {
@@ -67,11 +72,9 @@ class Feed extends Component {
     this.setState(prevState => {
       const updatedPosts = [...prevState.posts];
       const updatedPostIndex = updatedPosts.findIndex(p => p._id === post._id);
-
       if (updatedPostIndex > -1) {
         updatedPosts[updatedPostIndex] = post;
       }
-
       return {
         posts: updatedPosts
       };
@@ -105,7 +108,10 @@ class Feed extends Component {
       .then(resData => {
         this.setState({
           posts: resData.posts.map(post => {
-            return { ...post, imagePath: post.imageUrl };
+            return {
+              ...post,
+              imagePath: post.imageUrl
+            };
           }),
           totalPosts: resData.totalItems,
           postsLoading: false
@@ -116,7 +122,16 @@ class Feed extends Component {
 
   statusUpdateHandler = event => {
     event.preventDefault();
-    fetch("http://localhost:8080/auth/status")
+    fetch("http://localhost:8080/auth/status", {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer " + this.props.token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        status: this.state.status
+      })
+    })
       .then(res => {
         if (res.status !== 200 && res.status !== 201) {
           throw new Error("Can't update status!");
@@ -152,7 +167,6 @@ class Feed extends Component {
     this.setState({
       editLoading: true
     });
-    // Set up data (with image!)
     const formData = new FormData();
     formData.append("title", postData.title);
     formData.append("content", postData.content);
